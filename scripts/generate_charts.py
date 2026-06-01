@@ -36,13 +36,40 @@ import json
 import os
 import sys
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 
-# ── 中文字体设置 ─────────────────────────────────────────────
-plt.rcParams['font.sans-serif'] = ['SimSun', 'Times New Roman', 'SimHei']
+# ── Windows 编码修复 ─────────────────────────────────────────
+# Windows 中文系统默认 GBK，emoji 和特殊字符会报错
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+# ── 依赖检测 ─────────────────────────────────────────────────
+try:
+    import numpy as np
+except ImportError:
+    print("[ERROR] numpy not installed. Run: pip install numpy")
+    sys.exit(1)
+
+try:
+    import matplotlib
+    matplotlib.use('Agg')  # 非交互式后端，兼容服务器环境
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+except ImportError:
+    print("[ERROR] matplotlib not installed. Run: pip install matplotlib")
+    sys.exit(1)
+
+# ── 中文字体设置（带 fallback）─────────────────────────────────
+import platform
+_system = platform.system()
+if _system == 'Windows':
+    plt.rcParams['font.sans-serif'] = ['SimSun', 'SimHei', 'Microsoft YaHei', 'Times New Roman']
+elif _system == 'Darwin':  # macOS
+    plt.rcParams['font.sans-serif'] = ['STSong', 'Heiti SC', 'PingFang SC', 'Times New Roman']
+else:  # Linux
+    plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei', 'Noto Sans CJK SC', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
 DPI = 300
@@ -548,6 +575,14 @@ def main():
     parser.add_argument("--default", "-d", action="store_true",
                         help="默认模式，等同于 --type bar,radar,flow,line,area")
     args = parser.parse_args()
+
+    # 自动创建输出目录
+    os.makedirs(args.output, exist_ok=True)
+
+    # 检查输入文件
+    if not os.path.exists(args.input):
+        print(f"[ERROR] Input file not found: {args.input}")
+        sys.exit(1)
 
     with open(args.input, "r", encoding="utf-8") as f:
         charts_data = json.load(f)

@@ -1,5 +1,25 @@
+# Dependencies
+scripts/node_modules/
 node_modules/
+
+# Generated files
+images/
+*.docx
 output/
+
+# Temporary files
+charts.json
+content.json
+chart_summary.json
+fix_json.js
+
+# Logs
 *.log
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Python
+__pycache__/
+*.pyc

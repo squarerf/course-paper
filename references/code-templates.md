@@ -7,9 +7,15 @@
 cd <skill目录>/scripts
 npm init -y && npm install docx
 
-# Python 依赖
+# Python 依赖（使用可用的 Python 命令）
 pip install matplotlib numpy
+# 或
+pip3 install matplotlib numpy
 ```
+
+**Python 路径检测：**
+- Windows 上 `python` 可能指向 Windows Store stub（0字节），需要用 `python3` 或 `py`
+- 脚本已内置编码修复（Windows GBK → UTF-8）和依赖检测
 
 ## Word 文档生成
 
@@ -17,7 +23,14 @@ pip install matplotlib numpy
 
 **用法：**
 ```bash
+# 基本用法
 node scripts/generate_docx.js --input content.json --output 论文.docx
+
+# 使用封面模板（可选）
+node scripts/generate_docx.js --input content.json --output 论文.docx --cover 封面.docx
+
+# 查看帮助
+node scripts/generate_docx.js --help
 ```
 
 **输入文件 `content.json` 格式：**
@@ -53,6 +66,10 @@ node scripts/generate_docx.js --input content.json --output 论文.docx
   "images": {
     "fig1": { "path": "./images/fig1.png", "width": 480, "height": 320 }
   },
+  // images 字段说明：
+  // - key 必须与 content 中 "type":"image" 的 "ref" 一致
+  // - path 相对于 content.json 文件的位置
+  // - width/height 单位为像素，用于 Word 中的图片缩放
   "references": [
     "Khan M, et al. Title. Journal, 2023, 10(1): 1-10.",
     "Chae S, et al. Title. Journal, 2022, 5(3): 200-210."

@@ -313,15 +313,18 @@ async function main() {
   const args = process.argv.slice(2);
   let inputFile = null;
   let outputFile = "输出论文.docx";
+  let coverFile = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--input" && args[i + 1]) {
       inputFile = args[++i];
     } else if (args[i] === "--output" && args[i + 1]) {
       outputFile = args[++i];
+    } else if (args[i] === "--cover" && args[i + 1]) {
+      coverFile = args[++i];
     } else if (args[i] === "--help" || args[i] === "-h") {
       console.log(`
-用法: node generate_docx.js --input content.json [--output 论文.docx]
+用法: node generate_docx.js --input content.json [--output 论文.docx] [--cover 封面.docx]
 
 输入 JSON 格式:
 {
@@ -372,15 +375,48 @@ async function main() {
 
   // 读取输入
   const resolvedInput = path.resolve(inputFile);
+  if (!fs.existsSync(resolvedInput)) {
+    console.error(`错误：输入文件不存在: ${resolvedInput}`);
+    process.exit(1);
+  }
   const basePath = path.dirname(resolvedInput);
-  const content = JSON.parse(fs.readFileSync(resolvedInput, "utf-8"));
+  let content;
+  try {
+    content = JSON.parse(fs.readFileSync(resolvedInput, "utf-8"));
+  } catch (err) {
+    console.error(`错误：JSON 解析失败: ${err.message}`);
+    console.error(`请检查 content.json 格式是否正确（注意中文引号、缺少逗号等问题）`);
+    process.exit(1);
+  }
   const { meta, abstract_cn, keywords_cn, abstract_en, keywords_en,
     chapters, images, references } = content;
 
   console.log("📄 开始生成 Word 文档...");
 
   // 构建文档各部分
-  const coverLines = buildCover(meta);
+  let coverLines;
+  if (coverFile) {
+    // 使用封面模板
+    const resolvedCover = path.resolve(coverFile);
+    if (fs.existsSync(resolvedCover)) {
+      try {
+        // 读取封面模板（需要 docx 库的 Packer/extractDocx 等高级功能）
+        // 当前实现：如果模板存在，提示用户手动合并
+        console.log(`  ⚠ 封面模板检测到: ${resolvedCover}`);
+        console.log(`    请在生成后手动将模板封面复制到文档开头`);
+        console.log(`    或使用 Word 的"插入→对象→文件中的文字"功能`);
+        coverLines = buildCover(meta);
+      } catch (err) {
+        console.warn(`  ⚠ 封面模板读取失败，使用默认封面: ${err.message}`);
+        coverLines = buildCover(meta);
+      }
+    } else {
+      console.warn(`  ⚠ 封面模板不存在: ${resolvedCover}，使用默认封面`);
+      coverLines = buildCover(meta);
+    }
+  } else {
+    coverLines = buildCover(meta);
+  }
   console.log("  ✅ 封面");
 
   const abstractLines = buildAbstract(abstract_cn, keywords_cn, abstract_en, keywords_en);
